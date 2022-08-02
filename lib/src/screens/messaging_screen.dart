@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:info_app/src/networking/services.dart';
 
 import '../custom_widgets/custom_text_field.dart';
 import '../custom_widgets/message_bubble.dart';
@@ -12,21 +13,20 @@ class MessagingScreen extends StatefulWidget {
 }
 
 class _MessagingScreenState extends State<MessagingScreen> {
-  List<Map<String, dynamic>> messages = [];
+  List<QuerySnapshot<Map<String, dynamic>>> messages = [];
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final FirebaseFirestore _fb = FirebaseFirestore.instance;
+  final Services _services = Services();
 
-  Future<void> addMessage(String name, String message) async {
-    await _fb.collection('messages').add({
-      "name": name,
-      "message": message,
-    });
+  getData() {
+    var q = FirebaseFirestore.instance.collection('messages').snapshots();
+    print(q);
   }
 
   @override
   Widget build(BuildContext context) {
+    getData();
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -40,16 +40,30 @@ class _MessagingScreenState extends State<MessagingScreen> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
-                child: ListView.builder(
-                  //reverse: true,
-                  controller: _scrollController,
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    //messages.reversed.toList();
-                    return MessageBubble(
-                      name: messages[index]['name'],
-                      description: messages[index]['description'],
-                    );
+                child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: FirebaseFirestore.instance
+                      .collection('messages')
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Text('${snapshot.error}');
+                    } else if (snapshot.hasData) {
+                      return ListView.builder(
+                        //reverse: true,
+                        controller: _scrollController,
+                        itemCount: snapshot.data!.docs.length,
+                        itemBuilder: (context, index) {
+                          //messages.reversed.toList();
+
+                          return MessageBubble(
+                            name: snapshot.data!.docs[index]['name'],
+                            description: snapshot.data!.docs[index]['message'],
+                          );
+                        },
+                      );
+                    } else {
+                      return CircularProgressIndicator();
+                    }
                   },
                 ),
               ),
@@ -90,19 +104,7 @@ class _MessagingScreenState extends State<MessagingScreen> {
                         onPressed: () {
                           if (_nameController.text != '' &&
                               _messageController.text != '') {
-                            // setState(() {
-                            //   messages.add(
-                            //     {
-                            //       'name': _nameController.text,
-                            //       'description': _messageController.text,
-                            //     },
-                            //   );
-                            //   _scrollController.animateTo(
-                            //       _scrollController.position.maxScrollExtent,
-                            //       duration: const Duration(milliseconds: 300),
-                            //       curve: Curves.easeIn);
-                            // });
-                            addMessage(
+                            _services.addMessage(
                               _nameController.text,
                               _messageController.text,
                             );

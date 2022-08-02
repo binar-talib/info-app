@@ -1,5 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../custom_widgets/custom_text_field.dart';
 import '../custom_widgets/message_bubble.dart';
@@ -16,6 +16,15 @@ class _MessagingScreenState extends State<MessagingScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FirebaseFirestore _fb = FirebaseFirestore.instance;
+
+  Future<void> addMessage(String name, String message) async {
+    await _fb.collection('messages').add({
+      "name": name,
+      "message": message,
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -81,23 +90,28 @@ class _MessagingScreenState extends State<MessagingScreen> {
                         onPressed: () {
                           if (_nameController.text != '' &&
                               _messageController.text != '') {
-                            setState(() {
-                              messages.add(
-                                {
-                                  'name': _nameController.text,
-                                  'description': _messageController.text,
-                                },
-                              );
-                              _scrollController.animateTo(
-                                  _scrollController.position.maxScrollExtent,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeIn);
-                            });
+                            // setState(() {
+                            //   messages.add(
+                            //     {
+                            //       'name': _nameController.text,
+                            //       'description': _messageController.text,
+                            //     },
+                            //   );
+                            //   _scrollController.animateTo(
+                            //       _scrollController.position.maxScrollExtent,
+                            //       duration: const Duration(milliseconds: 300),
+                            //       curve: Curves.easeIn);
+                            // });
+                            addMessage(
+                              _nameController.text,
+                              _messageController.text,
+                            );
                           }
                         },
-                        icon: const FaIcon(
-                          FontAwesomeIcons.solidPaperPlane,
+                        icon: const Icon(
+                          Icons.send,
                           color: Color(0xFF00FF85),
+                          size: 30,
                         ),
                       )
                     ],
